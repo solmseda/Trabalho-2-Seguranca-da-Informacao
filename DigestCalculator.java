@@ -1,7 +1,7 @@
 /*
  * Trabalho 2 de Segurança da Informação
  * Sol Castilho Araújo de Moraes Sêda - 2511704
- *
+ * Leonardo Giuri Santiago - 2410725
  */
 
 import java.io.*;
@@ -59,10 +59,11 @@ public class DigestCalculator {
             if (arquivo.isFile()) {
                 try {
                     String digest = calcularDigest(arquivo, tipoDigest);
-                    
+
                     // Atualiza (ou cria) o arquivo XML para adicionar o novo digest
                     String status = updateXML(arquivo.getName(), tipoDigest, digest);
-                    System.out.println(arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = " + status + ")");
+                    System.out.println(
+                            arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = " + status + ")");
                 } catch (Exception e) {
                     System.out.println("Erro ao calcular digest de " + arquivo.getName() + ": " + e.getMessage());
                 }
