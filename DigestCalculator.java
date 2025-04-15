@@ -7,7 +7,20 @@
 import java.io.*;
 import java.security.*;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class DigestCalculator {
+
+    // Armazena o caminho do XML passado na linha de comando.
+    private static String caminhoXML;
 
     public static void main(String[] args) {
         if (args.length != 3) {
@@ -17,7 +30,7 @@ public class DigestCalculator {
 
         String tipoDigest = args[0].toUpperCase();
         String caminhoPasta = args[1];
-        String caminhoXML = args[2];
+        caminhoXML = args[2];
 
         // Garantindo que o tipo foi passado correntamente dos 4 possiveis
         if (!tipoDigest.equals("MD5") && !tipoDigest.equals("SHA1") && 
@@ -40,12 +53,15 @@ public class DigestCalculator {
             return;
         }
 
+        
 
         for (File arquivo : arquivos) {
             if (arquivo.isFile()) {
                 try {
                     String digest = calcularDigest(arquivo, tipoDigest);
                     System.out.println(arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = TODO)");
+                    // Atualiza (ou cria) o arquivo XML para adicionar o novo digest
+                    updateXML(arquivo.getName(), tipoDigest, digest);
                 } catch (Exception e) {
                     System.out.println("Erro ao calcular digest de " + arquivo.getName() + ": " + e.getMessage());
                 }
@@ -89,4 +105,61 @@ public class DigestCalculator {
         }
         return sb.toString();
     }
+
+    public static String CompareDigest(String digest) {
+        // Implementar a comparação dos dois digests
+
+        return "OK";
+    }
+
+    public static void updateXML(String fileName, String tipoDigest, String digestHex) throws Exception {
+        File xmlFile = new File(caminhoXML);
+        Document doc;
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+        System.out.println("Atualizando o XML: " + xmlFile.getAbsolutePath());
+        // Se o arquivo XML já existir, carregue-o; caso contrário, crie um novo documento
+        if (xmlFile.exists()) {
+            doc = dBuilder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+        } else {
+            doc = dBuilder.newDocument();
+            Element catalog = doc.createElement("CATALOG");
+            doc.appendChild(catalog);
+        }
+
+        // Cria o novo elemento <FILE_ENTRY>
+        Element fileEntry = doc.createElement("FILE_ENTRY");
+
+        Element fileNameElement = doc.createElement("FILE_NAME");
+        fileNameElement.appendChild(doc.createTextNode(fileName));
+        fileEntry.appendChild(fileNameElement);
+
+        Element digestEntry = doc.createElement("DIGEST_ENTRY");
+
+        Element digestTypeElement = doc.createElement("DIGEST_TYPE");
+        digestTypeElement.appendChild(doc.createTextNode(tipoDigest));
+        digestEntry.appendChild(digestTypeElement);
+
+        Element digestHexElement = doc.createElement("DIGEST_HEX");
+        digestHexElement.appendChild(doc.createTextNode(digestHex));
+        digestEntry.appendChild(digestHexElement);
+
+        fileEntry.appendChild(digestEntry);
+
+        // Adiciona o novo <FILE_ENTRY> ao elemento raiz <CATALOG>
+        doc.getDocumentElement().appendChild(fileEntry);
+
+        // Escreve o documento XML atualizado de volta para o arquivo
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(xmlFile);
+        transformer.transform(source, result);
+    }
+    
+
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<CATALOG>
+      
+  
+  <FILE_ENTRY>
+            
+    
+    <FILE_NAME>arquivo1.dat</FILE_NAME>
+            
+    
+    <DIGEST_ENTRY>
+                  
+      
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+                  
+      
+      <DIGEST_HEX>4d0bf8027962d6bcf029f615f710e26cecb78f7995468dfcaab042919231d496</DIGEST_HEX>
+                
+    
+    </DIGEST_ENTRY>
+          
+  
+  </FILE_ENTRY>
+    
+  
+  <FILE_ENTRY>
+        
+    <FILE_NAME>arquivo2.dat</FILE_NAME>
+        
+    <DIGEST_ENTRY>
+            
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+            
+      <DIGEST_HEX>67179413e7d713819c976f53c8fa22d00e771b919df13843e890289bb5855e58</DIGEST_HEX>
+          
+    </DIGEST_ENTRY>
+      
+  </FILE_ENTRY>
+  
+  <FILE_ENTRY>
+    <FILE_NAME>arquivo3.dat</FILE_NAME>
+    <DIGEST_ENTRY>
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+      <DIGEST_HEX>ecaa9b15e57b9c46ec1cd72866a99ff3abbdc16ffc9e34ed94feeba26fffcb7c</DIGEST_HEX>
+    </DIGEST_ENTRY>
+  </FILE_ENTRY>
+</CATALOG>
