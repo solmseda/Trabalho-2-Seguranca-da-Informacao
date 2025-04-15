@@ -1,0 +1,1 @@
+java DigestCalculator SHA256 pastaArquivos lista.xml

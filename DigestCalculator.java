@@ -16,6 +16,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class DigestCalculator {
 
@@ -33,8 +35,8 @@ public class DigestCalculator {
         caminhoXML = args[2];
 
         // Garantindo que o tipo foi passado correntamente dos 4 possiveis
-        if (!tipoDigest.equals("MD5") && !tipoDigest.equals("SHA1") && 
-            !tipoDigest.equals("SHA256") && !tipoDigest.equals("SHA512")) {
+        if (!tipoDigest.equals("MD5") && !tipoDigest.equals("SHA1") &&
+                !tipoDigest.equals("SHA256") && !tipoDigest.equals("SHA512")) {
             System.out.println("Tipo de digest inválido. Use MD5, SHA1, SHA256 ou SHA512.");
             return;
         }
@@ -53,15 +55,14 @@ public class DigestCalculator {
             return;
         }
 
-        
-
         for (File arquivo : arquivos) {
             if (arquivo.isFile()) {
                 try {
                     String digest = calcularDigest(arquivo, tipoDigest);
-                    System.out.println(arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = TODO)");
+                    
                     // Atualiza (ou cria) o arquivo XML para adicionar o novo digest
-                    updateXML(arquivo.getName(), tipoDigest, digest);
+                    String status = updateXML(arquivo.getName(), tipoDigest, digest);
+                    System.out.println(arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = " + status + ")");
                 } catch (Exception e) {
                     System.out.println("Erro ao calcular digest de " + arquivo.getName() + ": " + e.getMessage());
                 }
@@ -70,12 +71,15 @@ public class DigestCalculator {
     }
 
     /**
-     * Calcula o digest do conteudo de uma arquivo utlizando um algoritmo respetcivo do tipo do digest
+     * Calcula o digest do conteudo de uma arquivo utlizando um algoritmo respetcivo
+     * do tipo do digest
      *
      * @param arquivo    Arquivo em que o digest do conteudo deve ser calculado
      * @param tipoDigest Tipo do digest(MD5/SHA1/SHA256/SHA512)
-     * @return Retorna uma string de um Hexadecimal que representa o digest calculado
-     * @throws Exception Se um erro ocorre enquanto lê o arquivo ou se o tipo do digest é invalido
+     * @return Retorna uma string de um Hexadecimal que representa o digest
+     *         calculado
+     * @throws Exception Se um erro ocorre enquanto lê o arquivo ou se o tipo do
+     *                   digest é invalido
      */
     public static String calcularDigest(File arquivo, String tipoDigest) throws Exception {
         MessageDigest md = MessageDigest.getInstance(tipoDigest);
@@ -106,20 +110,32 @@ public class DigestCalculator {
         return sb.toString();
     }
 
-    public static String CompareDigest(String digest) {
-        // Implementar a comparação dos dois digests
-
-        return "OK";
-    }
-
-    public static void updateXML(String fileName, String tipoDigest, String digestHex) throws Exception {
+    /**
+     * Atualiza (ou cria) o arquivo XML ArqListaDigest e retorna um status:
+     * 
+     * OK = Digest calculado igual ao digest armazenado no ArqListaDigest e sem
+     * colisão.
+     * NOT OK = Digest calculado diferente do armazenado no ArqListaDigest e sem
+     * colisão.
+     * NOT FOUND = Nenhuma entrada para o arquivo foi encontrada no ArqListaDigest e
+     * sem colisão.
+     * COLISION = Digest calculado colide com o digest de outro arquivo (nome
+     * diferente) presente no ArqListaDigest.
+     *
+     * @param fileName   Nome do arquivo.
+     * @param tipoDigest Tipo do digest (MD5, SHA1, SHA256, SHA512).
+     * @param digestHex  Digest calculado (em hexadecimal).
+     * @return Uma String representando o status conforme as regras acima.
+     * @throws Exception Em caso de erro na leitura ou escrita do XML.
+     */
+    public static String updateXML(String fileName, String tipoDigest, String digestHex) throws Exception {
         File xmlFile = new File(caminhoXML);
         Document doc;
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
-        System.out.println("Atualizando o XML: " + xmlFile.getAbsolutePath());
-        // Se o arquivo XML já existir, carregue-o; caso contrário, crie um novo documento
+        // Se o arquivo XML já existir, carregue-o; caso contrário, crie um novo
+        // documento.
         if (xmlFile.exists()) {
             doc = dBuilder.parse(xmlFile);
             doc.getDocumentElement().normalize();
@@ -129,29 +145,61 @@ public class DigestCalculator {
             doc.appendChild(catalog);
         }
 
-        // Cria o novo elemento <FILE_ENTRY>
-        Element fileEntry = doc.createElement("FILE_ENTRY");
+        // Verifica colisão: se o mesmo digest (e tipo) existir para outro arquivo,
+        // retorna "COLISION".
+        if (detectCollision(fileName, tipoDigest, digestHex)) {
+            return "COLISION";
+        }
 
-        Element fileNameElement = doc.createElement("FILE_NAME");
-        fileNameElement.appendChild(doc.createTextNode(fileName));
-        fileEntry.appendChild(fileNameElement);
+        // Procura uma entrada existente para o arquivo.
+        NodeList fileEntries = doc.getElementsByTagName("FILE_ENTRY");
+        Element targetEntry = null;
+        for (int i = 0; i < fileEntries.getLength(); i++) {
+            Element entry = (Element) fileEntries.item(i);
+            String existingFileName = entry.getElementsByTagName("FILE_NAME").item(0).getTextContent();
+            if (existingFileName.equals(fileName)) {
+                targetEntry = entry;
+                break;
+            }
+        }
 
-        Element digestEntry = doc.createElement("DIGEST_ENTRY");
+        String status;
+        if (targetEntry != null) {
+            // Entrada encontrada; compare o digest armazenado com o calculado.
+            Element digestEntry = (Element) targetEntry.getElementsByTagName("DIGEST_ENTRY").item(0);
+            String storedDigest = digestEntry.getElementsByTagName("DIGEST_HEX").item(0).getTextContent();
+            if (storedDigest.equals(digestHex)) {
+                status = "OK";
+            } else {
+                status = "NOT OK";
+                // Atualiza a entrada para refletir o digest calculado.
+                digestEntry.getElementsByTagName("DIGEST_HEX").item(0).setTextContent(digestHex);
+                Element digestTypeElement = (Element) digestEntry.getElementsByTagName("DIGEST_TYPE").item(0);
+                digestTypeElement.setTextContent(tipoDigest);
+            }
+        } else {
+            // Nenhuma entrada para o arquivo encontrada; adiciona uma nova entrada.
+            status = "NOT FOUND";
+            Element catalog = doc.getDocumentElement();
+            Element newEntry = doc.createElement("FILE_ENTRY");
 
-        Element digestTypeElement = doc.createElement("DIGEST_TYPE");
-        digestTypeElement.appendChild(doc.createTextNode(tipoDigest));
-        digestEntry.appendChild(digestTypeElement);
+            Element fileNameElem = doc.createElement("FILE_NAME");
+            fileNameElem.appendChild(doc.createTextNode(fileName));
+            newEntry.appendChild(fileNameElem);
 
-        Element digestHexElement = doc.createElement("DIGEST_HEX");
-        digestHexElement.appendChild(doc.createTextNode(digestHex));
-        digestEntry.appendChild(digestHexElement);
+            Element digestEntry = doc.createElement("DIGEST_ENTRY");
+            Element digestTypeElem = doc.createElement("DIGEST_TYPE");
+            digestTypeElem.appendChild(doc.createTextNode(tipoDigest));
+            digestEntry.appendChild(digestTypeElem);
+            Element digestHexElem = doc.createElement("DIGEST_HEX");
+            digestHexElem.appendChild(doc.createTextNode(digestHex));
+            digestEntry.appendChild(digestHexElem);
+            newEntry.appendChild(digestEntry);
 
-        fileEntry.appendChild(digestEntry);
+            catalog.appendChild(newEntry);
+        }
 
-        // Adiciona o novo <FILE_ENTRY> ao elemento raiz <CATALOG>
-        doc.getDocumentElement().appendChild(fileEntry);
-
-        // Escreve o documento XML atualizado de volta para o arquivo
+        // Escreve o documento XML atualizado de volta para o arquivo.
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -159,7 +207,53 @@ public class DigestCalculator {
         DOMSource source = new DOMSource(doc);
         StreamResult result = new StreamResult(xmlFile);
         transformer.transform(source, result);
+
+        return status;
     }
-    
+
+    /**
+     * Verifica se já existe um digest com o mesmo tipo e valor para um arquivo
+     * diferente.
+     * Se existir, considera isso uma colisão.
+     *
+     * @param fileName   Nome do arquivo atual.
+     * @param tipoDigest Tipo do digest (MD5, SHA1, SHA256, SHA512).
+     * @param digestHex  Digest calculado (em hexadecimal).
+     * @return true se detectar colisão, false caso contrário.
+     * @throws Exception Em caso de erro ao ler ou interpretar o XML.
+     */
+    public static boolean detectCollision(String fileName, String tipoDigest, String digestHex) throws Exception {
+        File xmlFile = new File(caminhoXML);
+        if (!xmlFile.exists()) {
+            // Se o XML não existir, não há colisão.
+            return false;
+        }
+
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(xmlFile);
+        doc.getDocumentElement().normalize();
+
+        NodeList fileEntries = doc.getElementsByTagName("FILE_ENTRY");
+        for (int i = 0; i < fileEntries.getLength(); i++) {
+            Element entry = (Element) fileEntries.item(i);
+            String existingFileName = entry.getElementsByTagName("FILE_NAME").item(0).getTextContent();
+
+            NodeList digestEntries = entry.getElementsByTagName("DIGEST_ENTRY");
+            for (int j = 0; j < digestEntries.getLength(); j++) {
+                Element deElement = (Element) digestEntries.item(j);
+                String existingTipoDigest = deElement.getElementsByTagName("DIGEST_TYPE").item(0).getTextContent();
+                String existingDigestHex = deElement.getElementsByTagName("DIGEST_HEX").item(0).getTextContent();
+
+                // Se o digest type e o digest hex coincidirem e o arquivo for diferente, há
+                // colisão.
+                if (existingTipoDigest.equals(tipoDigest) && existingDigestHex.equals(digestHex)
+                        && !existingFileName.equals(fileName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 }
