@@ -63,7 +63,7 @@ public class DigestCalculator {
                     // Atualiza (ou cria) o arquivo XML para adicionar o novo digest
                     String status = updateXML(arquivo.getName(), tipoDigest, digest);
                     System.out.println(
-                            arquivo.getName() + " " + tipoDigest + " " + digest + " (Status = " + status + ")");
+                            arquivo.getName() + " " + tipoDigest + " " + digest + " (" + status + ")");
                 } catch (Exception e) {
                     System.out.println("Erro ao calcular digest de " + arquivo.getName() + ": " + e.getMessage());
                 }
@@ -86,7 +86,7 @@ public class DigestCalculator {
         MessageDigest md = MessageDigest.getInstance(tipoDigest);
 
         try (InputStream is = new FileInputStream(arquivo)) {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[512];
             int bytesLidos;
             while ((bytesLidos = is.read(buffer)) != -1) {
                 md.update(buffer, 0, bytesLidos);
@@ -132,11 +132,13 @@ public class DigestCalculator {
     public static String updateXML(String fileName, String tipoDigest, String digestHex) throws Exception {
         File xmlFile = new File(caminhoXML);
         Document doc;
+    
+        // Cria o parser de XML ignorando espaços em branco entre os elementos
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        dbFactory.setIgnoringElementContentWhitespace(true); // <- ESSENCIAL
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-        // Se o arquivo XML já existir, carregue-o; caso contrário, crie um novo
-        // documento.
+    
+        // Se o arquivo XML já existir, carregue-o; senão, crie um novo documento
         if (xmlFile.exists()) {
             doc = dBuilder.parse(xmlFile);
             doc.getDocumentElement().normalize();
@@ -145,14 +147,13 @@ public class DigestCalculator {
             Element catalog = doc.createElement("CATALOG");
             doc.appendChild(catalog);
         }
-
-        // Verifica colisão: se o mesmo digest (e tipo) existir para outro arquivo,
-        // retorna "COLISION".
+    
+        // Verifica colisão
         if (detectCollision(fileName, tipoDigest, digestHex)) {
             return "COLISION";
         }
-
-        // Procura uma entrada existente para o arquivo.
+    
+        // Procura por uma entrada existente do arquivo
         NodeList fileEntries = doc.getElementsByTagName("FILE_ENTRY");
         Element targetEntry = null;
         for (int i = 0; i < fileEntries.getLength(); i++) {
@@ -163,44 +164,72 @@ public class DigestCalculator {
                 break;
             }
         }
-
+    
         String status;
+    
         if (targetEntry != null) {
-            // Entrada encontrada; compare o digest armazenado com o calculado.
-            Element digestEntry = (Element) targetEntry.getElementsByTagName("DIGEST_ENTRY").item(0);
-            String storedDigest = digestEntry.getElementsByTagName("DIGEST_HEX").item(0).getTextContent();
-            if (storedDigest.equals(digestHex)) {
-                status = "OK";
-            } else {
-                status = "NOT OK";
-                // Atualiza a entrada para refletir o digest calculado.
-                digestEntry.getElementsByTagName("DIGEST_HEX").item(0).setTextContent(digestHex);
-                Element digestTypeElement = (Element) digestEntry.getElementsByTagName("DIGEST_TYPE").item(0);
-                digestTypeElement.setTextContent(tipoDigest);
+            // Verifica se o digest já existe para esse tipo
+            NodeList digestEntries = targetEntry.getElementsByTagName("DIGEST_ENTRY");
+            Element digestEntry = null;
+            for (int i = 0; i < digestEntries.getLength(); i++) {
+                Element de = (Element) digestEntries.item(i);
+                String tipo = de.getElementsByTagName("DIGEST_TYPE").item(0).getTextContent();
+                if (tipo.equals(tipoDigest)) {
+                    digestEntry = de;
+                    break;
+                }
             }
+    
+            if (digestEntry != null) {
+                String storedDigest = digestEntry.getElementsByTagName("DIGEST_HEX").item(0).getTextContent();
+                if (storedDigest.equals(digestHex)) {
+                    status = "OK";
+                } else {
+                    status = "NOT OK";
+                    digestEntry.getElementsByTagName("DIGEST_HEX").item(0).setTextContent(digestHex);
+                }
+            } else {
+                // Não existia esse tipo de digest ainda
+                status = "NOT FOUND";
+                Element newDigestEntry = doc.createElement("DIGEST_ENTRY");
+    
+                Element digestTypeElem = doc.createElement("DIGEST_TYPE");
+                digestTypeElem.appendChild(doc.createTextNode(tipoDigest));
+                newDigestEntry.appendChild(digestTypeElem);
+    
+                Element digestHexElem = doc.createElement("DIGEST_HEX");
+                digestHexElem.appendChild(doc.createTextNode(digestHex));
+                newDigestEntry.appendChild(digestHexElem);
+    
+                targetEntry.appendChild(newDigestEntry);
+            }
+    
         } else {
-            // Nenhuma entrada para o arquivo encontrada; adiciona uma nova entrada.
+            // Arquivo não está no XML: adiciona nova entrada
             status = "NOT FOUND";
             Element catalog = doc.getDocumentElement();
             Element newEntry = doc.createElement("FILE_ENTRY");
-
+    
             Element fileNameElem = doc.createElement("FILE_NAME");
             fileNameElem.appendChild(doc.createTextNode(fileName));
             newEntry.appendChild(fileNameElem);
-
+    
             Element digestEntry = doc.createElement("DIGEST_ENTRY");
             Element digestTypeElem = doc.createElement("DIGEST_TYPE");
             digestTypeElem.appendChild(doc.createTextNode(tipoDigest));
             digestEntry.appendChild(digestTypeElem);
+    
             Element digestHexElem = doc.createElement("DIGEST_HEX");
             digestHexElem.appendChild(doc.createTextNode(digestHex));
             digestEntry.appendChild(digestHexElem);
+    
             newEntry.appendChild(digestEntry);
-
             catalog.appendChild(newEntry);
         }
 
-        // Escreve o documento XML atualizado de volta para o arquivo.
+        limparEspacosEmBranco(doc);
+    
+        // Escreve o XML com indentação bonita e sem espaços extras
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -208,7 +237,7 @@ public class DigestCalculator {
         DOMSource source = new DOMSource(doc);
         StreamResult result = new StreamResult(xmlFile);
         transformer.transform(source, result);
-
+    
         return status;
     }
 
@@ -231,6 +260,7 @@ public class DigestCalculator {
         }
 
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        dbFactory.setIgnoringElementContentWhitespace(true);
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
         Document doc = dBuilder.parse(xmlFile);
         doc.getDocumentElement().normalize();
@@ -255,6 +285,18 @@ public class DigestCalculator {
             }
         }
         return false;
+    }
+
+    public static void limparEspacosEmBranco(Node node) {
+        NodeList children = node.getChildNodes();
+        for (int i = children.getLength() - 1; i >= 0; i--) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty()) {
+                node.removeChild(child); // remove espaços e quebras de linha
+            } else if (child.hasChildNodes()) {
+                limparEspacosEmBranco(child); // recursivo
+            }
+        }
     }
 
 }
