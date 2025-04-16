@@ -306,6 +306,7 @@ private static void createNewFileEntry(Document doc, String fileName, String tip
  * Método auxiliar para gravar o conteúdo do Document no arquivo XML.
  */
 public static void gravarXML(Document doc, File xmlFile) throws Exception {
+    limparEspacosEmBranco(doc.getDocumentElement());
     TransformerFactory transformerFactory = TransformerFactory.newInstance();
     Transformer transformer = transformerFactory.newTransformer();
     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
