@@ -1,1 +1,1 @@
-java DigestCalculator SHA256 pastaArquivos lista.xml
+java DigestCalculator MD5 pastaArquivos ArqListaDigest.xml

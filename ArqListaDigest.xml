@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<CATALOG>
+        
+  
+  
+  <FILE_ENTRY>
+                
+    
+    
+    <FILE_NAME>arquivo1.dat</FILE_NAME>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>4d0bf8027962d6bcf029f615f710e26cecb78f7995468dfcaab042919231d496</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>MD5</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>3d7d7490529ff8cc05e882fbaf9d87ca</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+              
+  
+  
+  </FILE_ENTRY>
+        
+  
+  
+  <FILE_ENTRY>
+                
+    
+    
+    <FILE_NAME>arquivo2.dat</FILE_NAME>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>67179413e7d713819c976f53c8fa22d00e771b919df13843e890289bb5855e58</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>MD5</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>851ddb4d310249690b05ea9b77e7667f</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+              
+  
+  
+  </FILE_ENTRY>
+        
+  
+  
+  <FILE_ENTRY>
+                
+    
+    
+    <FILE_NAME>arquivo3.dat</FILE_NAME>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+                
+    
+    
+    <DIGEST_ENTRY>
+                        
+      
+      
+      <DIGEST_TYPE>MD5</DIGEST_TYPE>
+                        
+      
+      
+      <DIGEST_HEX>d41d8cd98f00b204e9800998ecf8427e</DIGEST_HEX>
+                      
+    
+    
+    </DIGEST_ENTRY>
+              
+  
+  
+  </FILE_ENTRY>
+        
+  
+  
+  
+  
+  <FILE_ENTRY>
+            
+    
+    <FILE_NAME>arquivo6.dat</FILE_NAME>
+            
+    
+    <DIGEST_ENTRY>
+                  
+      
+      <DIGEST_TYPE>MD5</DIGEST_TYPE>
+                  
+      
+      <DIGEST_HEX>d5db69a8acaa68ea1fe8d04cb937fcc7</DIGEST_HEX>
+                
+    
+    </DIGEST_ENTRY>
+          
+  
+    <DIGEST_ENTRY>
+      <DIGEST_TYPE>SHA256</DIGEST_TYPE>
+      <DIGEST_HEX>448594465fd3d2d9b01e4e2bff79bb7aa8742e7ec27ab847d26dd5d5a806057e</DIGEST_HEX>
+    </DIGEST_ENTRY>
+  </FILE_ENTRY>
+    
+  
+  <FILE_ENTRY>
+        
+    <FILE_NAME>arquivo4.dat</FILE_NAME>
+        
+    <DIGEST_ENTRY>
+            
+      <DIGEST_TYPE>MD5</DIGEST_TYPE>
+            
+      <DIGEST_HEX>b2ec8b0b1978b36efd4c86b023857b66</DIGEST_HEX>
+          
+    </DIGEST_ENTRY>
+      
+  </FILE_ENTRY>
+  
+</CATALOG>
